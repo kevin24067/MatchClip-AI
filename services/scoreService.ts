@@ -3,10 +3,9 @@ import { RallyClip, RallyClipWithState, ScoreState } from '../types';
 /**
  * Service to manage Badminton Score Logic (Rally Point System - 21 Points)
  * 
- * CORE LOGIC CHANGE:
- * Instead of simulating a winner randomly and determining the next server,
- * we now use the *sequence of servers* (which is visually observable) to 
- * deductively determine who won the previous rally.
+ * Core policy:
+ * - `winner` is treated as an explicit manual/import override only.
+ * - If `winner` is absent, infer it from the sequence of `serverSide`.
  * 
  * Logic:
  * If Server(N+1) == Server(N) -> Server(N) won Rally(N). (Retained service)
@@ -61,7 +60,7 @@ export class BadmintonScoreEngine {
       // --- Determine Winner of THIS rally ---
       let winner: 'A' | 'B';
 
-      // CHANGE: Prioritize explicit winner field (Manual Override / Import)
+      // `winner` should only be present for manual overrides/imported ground truth.
       if (currentRally.winner) {
           winner = currentRally.winner;
           console.log(`[ScoreEngine] Rally #${currentRally.id}: Explicit winner '${winner}' found.`);
@@ -77,8 +76,8 @@ export class BadmintonScoreEngine {
       } else {
         // End of Match Handling (Last Rally)
         // Since there is no "next server", we cannot deductively know the winner.
-        // We rely on the explicitly set `winner` property (manual override),
-        // or default to the current server (assuming they won) if not set.
+        // Fall back to an explicit override if present, otherwise keep the current server
+        // so the last rally remains deterministic instead of random.
         winner = currentRally.winner || currentServer; 
       }
 

@@ -1,4 +1,3 @@
-
 export enum RallyState {
   IDLE = 'IDLE',
   SERVE_PREP = 'SERVE_PREP', // New state: Visually detected player holding ball
@@ -21,10 +20,12 @@ export interface RallyClip {
   start: number;
   end: number;
   hits: number;
-  // serverSide is now the input "Ground Truth" for score calculation
+  // serverSide is the current best-known serving side for this rally.
+  // Auto-detected rallies default to a deterministic guess and can be corrected manually.
   serverSide: 'A' | 'B'; // A = Near Side, B = Far Side
-  // winner is now a derived property based on the NEXT rally's server
-  winner?: 'A' | 'B'; 
+  // Optional explicit override from manual correction or imported data.
+  // Leave undefined for auto-detected rallies so score can be inferred from server flow.
+  winner?: 'A' | 'B';
 }
 
 export interface ScoreState {

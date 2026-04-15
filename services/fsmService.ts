@@ -6,6 +6,7 @@ import { FrameFeature, RallyClip, RallyState } from '../types';
  * Updates:
  * - Added visual cue support: `shuttle_held` triggers "Serve Prep".
  * - Added visual cue support: `shuttle_ground` triggers immediate Rally End.
+ * - Auto-detected rallies no longer fabricate random winners.
  */
 export class RallyFSM {
   private state: RallyState = RallyState.IDLE;
@@ -22,13 +23,12 @@ export class RallyFSM {
   // Ignore the first few seconds of video to prevent handling noise/setup as a rally
   private readonly WARMUP_SKIP_SECONDS = 3.0;
 
-  // Helper to guess initial server flow
-  private lastWinner: 'A' | 'B' = 'A'; 
+  // Deterministic default for the serving side when analysis has no reliable side/winner signal.
+  private readonly DEFAULT_SERVER: 'A' | 'B' = 'A';
   
   public processSignals(frames: FrameFeature[]): RallyClip[] {
     const rallies: RallyClip[] = [];
     this.reset();
-    this.lastWinner = 'A'; // Reset match start assumption
 
     const debouncedFrames = this.debounceHits(frames);
 
@@ -153,18 +153,15 @@ export class RallyFSM {
       // Double check duration
       if (duration > 1.5) { // Slightly lower duration threshold if we have better detection
         
-        // Initial Server Guess Logic:
-        const predictedServer = this.lastWinner;
-        const simulatedWinner = Math.random() > 0.5 ? 'A' : 'B';
-        this.lastWinner = simulatedWinner;
-
+        // P0 fix: never fabricate a winner during analysis.
+        // Keep `winner` undefined so the score engine can infer it from
+        // serving flow or honor explicit manual/import overrides later.
         rallies.push({
           id: rallies.length + 1,
           start: parseFloat(this.currentRallyStart.toFixed(2)),
           end: parseFloat(endTime.toFixed(2)),
           hits: this.hitCount,
-          serverSide: predictedServer, 
-          winner: simulatedWinner
+          serverSide: this.DEFAULT_SERVER
         });
       }
     }
