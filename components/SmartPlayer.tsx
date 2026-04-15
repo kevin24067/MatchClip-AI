@@ -1,11 +1,13 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { Play, Pause, Eye, Scissors, RotateCcw } from 'lucide-react';
-import { RallyClip } from '../types';
-import { scoreEngine } from '../services/scoreService';
+import { RallyClip, RallyClipWithState } from '../types';
 
 interface SmartPlayerProps {
   videoUrl: string;
   rallies: RallyClip[];
+  // P0-06 修复：直接接收 App.tsx 已处理好的带比分状态的回合列表
+  // 避免 SmartPlayer 内部重复调用 scoreEngine，统一比分来源
+  processedRallies: RallyClipWithState[];
   currentTime: number;
   setCurrentTime: (t: number) => void;
   isSmartMode: boolean;
@@ -14,7 +16,8 @@ interface SmartPlayerProps {
 
 const SmartPlayer: React.FC<SmartPlayerProps> = ({ 
   videoUrl, 
-  rallies, 
+  rallies,
+  processedRallies,
   currentTime, 
   setCurrentTime,
   isSmartMode,
@@ -39,10 +42,8 @@ const SmartPlayer: React.FC<SmartPlayerProps> = ({
         .replace("Left", "左");
   };
 
-  // Pre-calculate full match state once rallies change
-  const ralliesWithState = React.useMemo(() => {
-    return scoreEngine.processRallies(rallies);
-  }, [rallies]);
+  // P0-06 修复：直接使用 App.tsx 传入的 processedRallies，不再重复计算
+  const ralliesWithState = processedRallies;
 
   // Sync Video Time
   useEffect(() => {

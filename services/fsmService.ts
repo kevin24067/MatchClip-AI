@@ -3,16 +3,22 @@ import { FrameFeature, RallyClip, RallyState } from '../types';
 /**
  * Finite State Machine for Badminton Rally Detection (Doubles Optimized)
  * 
- * Updates:
- * - Added visual cue support: `shuttle_held` triggers "Serve Prep".
- * - Added visual cue support: `shuttle_ground` triggers immediate Rally End.
- * - Auto-detected rallies no longer fabricate random winners.
+ * 功能说明：
+ * - 视觉信号支持：`shuttle_held` 触发 SERVE_PREP 状态
+ * - 视觉信号支持：`shuttle_ground` 立即结束回合
+ * - 自动分析不再生成随机 winner（P0-01/P0-02 修复）
+ * - `MIN_HITS_IF_VISUAL_CONFIRMED` 在视觉确认回合中真正生效（P1-03 修复）
+ * - SERVE_PREP 超时逻辑已修复，8 秒内无击球则回退到 IDLE（P1-04 修复）
  */
 export class RallyFSM {
   private state: RallyState = RallyState.IDLE;
   private currentRallyStart: number | null = null;
   private lastHitTime: number = 0;
   private hitCount: number = 0;
+  // 标记本回合是否由视觉确认（shuttle_held）触发，用于降低最低击球门槛
+  private visualConfirmed: boolean = false;
+  // 进入 SERVE_PREP 状态的时间戳，用于超时回退
+  private servePrepEntryTime: number = 0;
   
   private readonly TIMEOUT_THRESHOLD = 2.0; 
   // Standard minimum hits to consider it a rally
@@ -44,6 +50,7 @@ export class RallyFSM {
              // Visual confirmation: Player is holding the ball to serve.
              // Transition to PREP state.
              this.state = RallyState.SERVE_PREP;
+             this.servePrepEntryTime = frame.t; // 记录进入 SERVE_PREP 的时间（P1-04 修复）
           } else if (isHit) {
             // Audio-only start
             this.state = RallyState.RALLY;
@@ -61,9 +68,10 @@ export class RallyFSM {
              this.currentRallyStart = frame.t - 0.5;
              this.lastHitTime = frame.t;
              this.hitCount = 1;
-          } else if (frame.t - this.lastHitTime > 5.0 && this.lastHitTime !== 0) {
-             // Timeout in prep? Back to Idle (False detection)
-             // Not critical as we usually just wait for hit
+             this.visualConfirmed = true; // 视觉确认触发，降低门槛
+          } else if (frame.t - this.servePrepEntryTime > 8.0) {
+             // SERVE_PREP 超时（8秒内无击球），视为误检，回退到 IDLE
+             this.reset();
           }
           break;
 
@@ -109,9 +117,11 @@ export class RallyFSM {
             this.lastHitTime = frame.t;
             this.hitCount++;
           } else {
-            const endBuffer = 1.0; 
-            // If we came from a Visual Start, we are more lenient on hit count
-            const minHits = this.currentRallyStart !== null ? this.MIN_HITS_FOR_RALLY : this.MIN_HITS_FOR_RALLY;
+            const endBuffer = 1.0;
+            // 视觉确认触发的回合使用更低的击球门槛（P1-03 修复）
+            const minHits = this.visualConfirmed
+              ? this.MIN_HITS_IF_VISUAL_CONFIRMED
+              : this.MIN_HITS_FOR_RALLY;
             
             if (this.hitCount >= minHits) {
                 this.finalizeRally(rallies, this.lastHitTime + endBuffer);
@@ -173,5 +183,7 @@ export class RallyFSM {
     this.currentRallyStart = null;
     this.lastHitTime = 0;
     this.hitCount = 0;
+    this.visualConfirmed = false;
+    this.servePrepEntryTime = 0;
   }
 }

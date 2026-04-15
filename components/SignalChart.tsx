@@ -19,10 +19,10 @@ const SignalChart: React.FC<SignalChartProps> = ({ data, rallies, currentTime, o
         <div className="flex items-center gap-4">
              <span>信号分析</span>
              <div className="flex items-center gap-2 text-[10px] font-normal lowercase">
-                <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-blue-500"></span>motion</span>
-                <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-rose-500"></span>audio hit</span>
-                <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-yellow-500"></span>held</span>
-                <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-orange-700"></span>ground</span>
+                <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-blue-500"></span>motion <span className="text-slate-600 text-[8px]">(启发式)</span></span>
+                <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-rose-500"></span>audio hit <span className="text-emerald-600 text-[8px]">✓真实</span></span>
+                <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-yellow-500"></span>held <span className="text-slate-600 text-[8px]">(占位)</span></span>
+                <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-orange-700"></span>ground <span className="text-slate-600 text-[8px]">(占位)</span></span>
              </div>
         </div>
         <span className="text-emerald-500">检测到的回合: {rallies.length}</span>

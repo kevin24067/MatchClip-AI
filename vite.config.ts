@@ -1,23 +1,24 @@
 import path from 'path';
-import { defineConfig, loadEnv } from 'vite';
+import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
-export default defineConfig(({ mode }) => {
-    const env = loadEnv(mode, '.', '');
-    return {
-      server: {
+/**
+ * P4-03 清理：移除无效的 GEMINI_API_KEY 环境变量注入。
+ * 项目使用 Web Audio API 本地分析，不依赖任何外部 API Key。
+ */
+export default defineConfig({
+    test: {
+        environment: 'node',
+        include: ['__tests__/**/*.test.ts'],
+    },
+    server: {
         port: 3000,
         host: '0.0.0.0',
-      },
-      plugins: [react()],
-      define: {
-        'process.env.API_KEY': JSON.stringify(env.GEMINI_API_KEY),
-        'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY)
-      },
-      resolve: {
+    },
+    plugins: [react()],
+    resolve: {
         alias: {
-          '@': path.resolve(__dirname, '.'),
-        }
-      }
-    };
+            '@': path.resolve(__dirname, '.'),
+        },
+    },
 });

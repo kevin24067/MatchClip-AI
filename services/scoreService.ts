@@ -10,6 +10,10 @@ import { RallyClip, RallyClipWithState, ScoreState } from '../types';
  * Logic:
  * If Server(N+1) == Server(N) -> Server(N) won Rally(N). (Retained service)
  * If Server(N+1) != Server(N) -> Receiver(N) won Rally(N). (Side out)
+ *
+ * Last Rally Policy (P0-05):
+ * 末回合没有下一回合可参考，默认当前发球方赢得最后一分。
+ * 用户可通过人工编辑覆盖此默认值。
  */
 export class BadmintonScoreEngine {
   
@@ -74,11 +78,10 @@ export class BadmintonScoreEngine {
           winner = currentServer === 'A' ? 'B' : 'A';
         }
       } else {
-        // End of Match Handling (Last Rally)
-        // Since there is no "next server", we cannot deductively know the winner.
-        // Fall back to an explicit override if present, otherwise keep the current server
-        // so the last rally remains deterministic instead of random.
-        winner = currentRally.winner || currentServer; 
+        // 末回合处理（P0-05）：没有下一回合可参考发球方
+        // 策略：默认当前发球方赢得最后一分（保持确定性，不引入随机）
+        // 用户可通过人工编辑覆盖此默认值
+        winner = currentServer;
       }
 
       // --- CRITICAL FIX: Do not mutate currentRally in place ---
